@@ -1,23 +1,37 @@
-const httpFunction = require('./index');
-const context = require('../testing/defaultContext');
+const httpFunction = require("./index");
+const context = require("../testing/defaultContext");
 
-test('Http trigger should return a generic response (no name)', async () => {
+test("Http trigger should return a missing input response (no date or time)", async () => {
     const request = {};
 
     await httpFunction(context, request);
 
-    expect(context.log.mock.calls.length).toBe(1);
-    expect(context.res.body).toEqual('No name was received');
+    expect(context.res.body).toEqual("Error retrieving restaurant open times. Please verify that you entered a correct date and time.");
 });
 
-test('Http trigger should return a response with a name', async () => {
-
+test("Http trigger should return a missing input response (no date)", async () => {
     const request = {
-        query: { name: 'Dave' }
+        query: {
+            time: "11:55:23"
+        }
     };
 
     await httpFunction(context, request);
 
-    expect(context.log.mock.calls.length).toBe(2);
-    expect(context.res.body).toEqual('Hello Dave');
+    expect(context.res.body).toEqual("Error retrieving restaurant open times. Please verify that you entered a correct date and time.");
+});
+
+test("Http trigger should return a response with a date and time", async () => {
+    const request = {
+        query: {
+            date: "2022-08-15",
+            time: "11:55:23"
+        }
+    };
+
+    await httpFunction(context, request);
+
+    expect(context.res.body).toEqual(
+        `inputDate: ${request.query.date}; inputTime: ${request.query.time}`
+    );
 });
