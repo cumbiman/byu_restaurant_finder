@@ -1,0 +1,12 @@
+{
+  "name": "byu_restaurant_finder",
+  "version": "1.0.0",
+  "description": "Find open restaurants",
+  "scripts": {
+    "start": "func start",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.0.1"
+  }
+}
