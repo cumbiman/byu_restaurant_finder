@@ -1,4 +1,9 @@
-const restaurantJSON = require("./data/rest_hours.json");
+/**
+ * Entry point for Azure function. Receives date and time and returns all restaurants that are open
+ * during that day of week and time of day.
+ */
+
+const jsonParser = require("./JSONparser/jsonParser");
 
 module.exports = async function (context, req) {
     try {
@@ -8,6 +13,8 @@ module.exports = async function (context, req) {
 
         // If we're missing a required input then return a 400 error
         if (!inputDate || !inputTime) throw new Error("Missing or invalid date or time inputs");
+
+        const parserResults = jsonParser(context);
 
         const responseMessage = `inputDate: ${inputDate}; inputTime: ${inputTime}`;
 
