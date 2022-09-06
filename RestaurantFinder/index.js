@@ -12,15 +12,17 @@ module.exports = async function (context, req) {
         const inputTime = req?.query?.time ?? req?.body?.time ?? undefined;
 
         // If we're missing a required input then return a 400 error
-        if (!inputDate || !inputTime) throw new Error("Missing or invalid date or time inputs");
+        if (!inputDate || !inputTime)
+            throw new Error("Missing or invalid date or time inputs");
 
-        const parserResults = jsonParser(context);
-
-        const responseMessage = `inputDate: ${inputDate}; inputTime: ${inputTime}`;
+        const parserResults = jsonParser(context, inputDate, inputTime);
 
         // Send a 200 response
         context.res = {
-            body: responseMessage
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: parserResults
         };
     } catch (err) {
         // Log error in function logs

@@ -4,29 +4,36 @@
 
 const restaurantJSON = require("../data/rest_hours.json");
 
-module.exports = (context) => {
+module.exports = (context, inputDate, inputTime) => {
     try {
-        // Store the restaurants that are open for each day
-        const parsedData = {
-            mon: [],
-            tue: [],
-            wed: [],
-            thu: [],
-            fri: [],
-            sat: [],
-            sun: []
-        };
+        const userDay = getUserDay(inputDate);
+        const userTime = convertTimeToNumber(inputTime);
+
+        const eligibleRestaurants = [];
 
         restaurantJSON.forEach((restaurant) => {
+            console.log(
+                `Restaurant: ${restaurant.name}, Times: ${restaurant.times}`
+            );
             const openTimes = getOpenDaysAndTimes(restaurant.times);
 
-            const results = {
-                name: restaurant.name,
-                openTimes: openTimes
-            };
+            const restaurantsOpenOnDay = openTimes.find((hours) => {
+                const isOpen =
+                    hours.openDays.includes(userDay) &&
+                    hours.openTime <= userTime &&
+                    hours.closeTime >= userTime;
 
-            console.log(results);
+                return isOpen;
+            });
+
+            if (restaurantsOpenOnDay) {
+                eligibleRestaurants.push(restaurant.name);
+            }
         });
+
+        return {
+            restaurants: eligibleRestaurants
+        };
     } catch (err) {
         context.log("JSONparser error: ", err.message ?? err);
 
@@ -36,6 +43,17 @@ module.exports = (context) => {
         };
     }
 };
+
+/**
+ * Gets the day of the week from the user's inputted date.
+ * @param {string} inputDate The date as a string
+ * @returns The day of the week
+ */
+function getUserDay(inputDate) {
+    const dayOfWeek = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const userDate = new Date(inputDate);
+    return dayOfWeek[userDate.getDay()];
+}
 
 /**
  * Takes the days portion of the times string and returns all of the open days
@@ -51,6 +69,9 @@ function getOpenDaysAndTimes(times) {
         // Get the open and close times
         const [openTime, closeTime] = parseTime(dayAndTime);
 
+        // If the closing time is smaller than the opening time then we must have passed midnight
+        const isOpenAfterMidnight = closeTime < openTime && closeTime !== 0;
+
         // Split apart any days of week separated by a comma
         const daySplit = dayAndTime.split(",");
 
@@ -59,22 +80,41 @@ function getOpenDaysAndTimes(times) {
 
         // Loop through days and record all of the available days and open times
         daySplit.forEach((day) => {
-            openDays = [...parseDate(day), ...openDays];
+            openDays = [...parseDate(day, false), ...openDays];
         });
 
-        // Compile results
-        const results = {
+        // Compile results (if close time on or after midnight then make the closing time 24)
+        allResults.push({
             openTime: openTime,
-            closeTime: closeTime,
+            closeTime: !isOpenAfterMidnight && closeTime !== 0 ? closeTime : 24,
             openDays: openDays
-        };
+        });
 
-        allResults.push(results);
+        // If the restaurant is open after midnight then calculate the days and open times for the next morning
+        if (isOpenAfterMidnight) {
+            console.log(">>> Is open after midnight");
+            let pastMidnightOpenDays = [];
+
+            daySplit.forEach((day) => {
+                pastMidnightOpenDays = [...parseDate(day, true)];
+            });
+
+            allResults.push({
+                openTime: 0,
+                closeTime: closeTime,
+                openDays: pastMidnightOpenDays
+            });
+        }
     });
 
     return allResults;
 }
 
+/**
+ * Parses the JSON open and close times and returns the times as numbers.
+ * @param {string} dayAndTime The day of the week and times of day when a restaurant is open
+ * @returns The opening and closing times for the restaurant
+ */
 function parseTime(dayAndTime) {
     // Capture the time-span portion of the day/time string (expecting format
     // "Mon-Thu, Sun 10 am - 10:30 pm" or some variation of this)
@@ -93,22 +133,56 @@ function parseTime(dayAndTime) {
     return [openTime, closeTime];
 }
 
-// Function to pull apart the time string and return a more useable number
+/**
+ * Function to pull apart the time string and return a more useable number.
+ * @param {string} time The time as a string, either in format HH:MM or HH:MM AM/PM
+ * @returns The time formatted as a number HH.(MM/60)
+ */
 function convertTimeToNumber(time) {
-    // Get the minutes if any are specified
-    const minutes = /:/.test(time) ? parseInt(time.match(/:(\d+)/)[1]) / 60 : 0;
+    // Split up the time string into hours and minutes
+    const timeSections = time.replace(/am|pm/gi, "").trim().split(":");
 
-    // Get the hours. If PM then convert to 24 hour format
-    const hours = /am/gi.test(time)
-        ? parseInt(time.replace("am", "").split(":")[0].trim())
-        : parseInt(time.replace("pm", "").split(":")[0].trim()) + 12;
+    // Get the minutes and convert them into a floating number
+    const minutes =
+        timeSections.length > 1 && !isNaN(timeSections[1])
+            ? timeSections[1].trim() / 60
+            : 0;
+
+    // Get the hours and convert them to an integer
+    let hours;
+    if (/12(:00){0,2}\s*am/gi.test(time)) {
+        // If 12 AM then set hours to 24
+        hours = 24;
+    } else if (/12(:\d{1,2}){1,2}\s*am/gi.test(time)) {
+        // If 12:01 AM to 12:59 AM then set hours to 0
+        hours = 0;
+    } else if (/12(:\d{1,2}){0,2}\s*pm/gi.test(time)) {
+        // If 12 PM then set hours to 12
+        hours = 12;
+    } else if (/pm/gi.test(time)) {
+        // If afternoon then convert to 24 hour time
+        hours = parseInt(timeSections[0].trim()) + 12;
+    } else {
+        // If AM or unspecified then just keep the hours as provided
+        hours = parseInt(timeSections[0].trim());
+
+        // If hours is 0 (exactly midnight) then set the hours to 24
+        if (hours === 0) {
+            hours = 24;
+        }
+    }
 
     return hours + minutes;
 }
 
-function parseDate(days) {
+/**
+ * Takes a day or range of days and returns an array of each day in the range.
+ * @param {string} days A range of days (ie mon-thu) or a single day
+ * @returns All of the open days as an array of strings
+ */
+function parseDate(days, openPastMidnight) {
     // Array of all possible days of the week
-    const daysOfWeek = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    const mondayToSunday = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
     // Array to store the open days
     let openDaysArray = [];
@@ -128,24 +202,57 @@ function parseDate(days) {
         const dayArray = daySpan.split("-");
 
         // Find the indexes of the first and last days in the daysOfWeek array
-        const firstDay = daysOfWeek.findIndex(
+        const firstDay = mondayToSunday.findIndex(
             (dayOfWeek) =>
                 dayArray[0].toLowerCase().trim() === dayOfWeek.toLowerCase()
         );
-        const lastDay = daysOfWeek.findIndex(
+        const lastDay = mondayToSunday.findIndex(
             (dayOfWeek) =>
                 dayArray[1].toLowerCase().trim() === dayOfWeek.toLowerCase()
         );
 
-        const allIncludedDays = daysOfWeek.slice(firstDay, lastDay + 1);
+        let allIncludedDays = [];
 
-        // Capture all of the included days as an array
-        openDaysArray = [...openDaysArray, ...allIncludedDays];
+        if (!openPastMidnight) {
+            // Get all of the days between and inclusive of two days of the week
+            allIncludedDays = mondayToSunday.slice(firstDay, lastDay + 1);
+        } else {
+            // If the open time for a day goes past midnight, then add the next day to the beginning and ending day
+            const lastDayIndex =
+                lastDay + 2 > mondayToSunday.length ? 0 : lastDay + 2;
+
+            if (firstDay + 1 < lastDayIndex) {
+                // Get all of the days between and inclusive of two days of the week
+                allIncludedDays = mondayToSunday.slice(
+                    firstDay + 1,
+                    lastDayIndex
+                );
+            } else {
+                // If the open days wrap around from Sun back to Mon then get the beginning and tail end of the array
+                allIncludedDays = [
+                    ...mondayToSunday.slice(0, lastDayIndex),
+                    ...mondayToSunday.slice(lastDayIndex)
+                ];
+            }
+        }
+
+        // Save all of the open days as an array
+        openDaysArray = [...allIncludedDays];
     } else {
         // Otherwise, process a single day
         const singleDay = daySpan.toLowerCase().trim();
-        if (daysOfWeek.includes(singleDay)) {
-            openDaysArray.push(singleDay);
+
+        if (!openPastMidnight) {
+            if (mondayToSunday.includes(singleDay)) {
+                openDaysArray.push(singleDay);
+            }
+        } else {
+            const dayIndex = mondayToSunday.findIndex(
+                (dayOfWeek) => singleDay === dayOfWeek.toLowerCase()
+            );
+            const pastMidnightDay =
+                dayIndex + 1 >= mondayToSunday.length ? 0 : dayIndex + 1;
+            openDaysArray.push(mondayToSunday[pastMidnightDay]);
         }
     }
 
