@@ -4,7 +4,8 @@
   "description": "Find open restaurants",
   "scripts": {
     "start": "func start",
-    "test": "jest"
+    "test": "jest",
+    "test-coverage": "jest --coverage"
   },
   "devDependencies": {
     "jest": "^29.0.1"

@@ -17,13 +17,8 @@ module.exports = async function (context, req) {
 
         const parserResults = jsonParser(context, inputDate, inputTime);
 
-        // Send a 200 response
-        context.res = {
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: parserResults
-        };
+        // Send the response from jsonParser
+        context.res = parserResults;
     } catch (err) {
         // Log error in function logs
         context.log("Error: ", err.message || err);
@@ -31,6 +26,9 @@ module.exports = async function (context, req) {
         // Return 400 error
         context.res = {
             status: 400,
+            headers: {
+                "Content-Type": "text/plain"
+            },
             body: `Error retrieving restaurant open times. Please verify that you entered a correct date and time.`
         };
     }
