@@ -3,7 +3,7 @@
  * during that day of week and time of day.
  */
 
-const jsonParser = require("./JSONparser/jsonParser");
+const findRestaurants = require("./findRestaurants/findRestaurants");
 
 module.exports = async function (context, req) {
     try {
@@ -15,7 +15,7 @@ module.exports = async function (context, req) {
         if (!inputDate || !inputTime)
             throw new Error("Missing or invalid date or time inputs");
 
-        const parserResults = jsonParser(context, inputDate, inputTime);
+        const parserResults = findRestaurants(context, inputDate, inputTime);
 
         // Send the response from jsonParser
         context.res = parserResults;

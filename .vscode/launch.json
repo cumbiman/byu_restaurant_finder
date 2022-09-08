@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Jest Tests",
+            "name": "Jest Test Debug",
             "type": "node",
             "request": "launch",
             "runtimeArgs": [
@@ -14,7 +14,7 @@
             "internalConsoleOptions": "neverOpen"
         },
         {
-            "name": "Attach to Node Functions",
+            "name": "Attach to Azure Functions",
             "type": "node",
             "request": "attach",
             "port": 9229,

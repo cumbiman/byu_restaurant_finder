@@ -74,5 +74,5 @@ test("Http trigger should return a list of open restaurants for 15 Aug 2022 at 1
 
     await httpFunction(context, request);
 
-    expect(context.res.body.restaurants.length).toEqual(49);
+    expect(context.res.body.restaurants.length).toEqual(48);
 });
