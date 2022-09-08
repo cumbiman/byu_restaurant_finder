@@ -44,7 +44,7 @@ const findRestaurants = (context, inputDate, inputTime) => {
             }
         };
     } catch (err) {
-        context.log("JSONparser error: ", err.message ?? err);
+        context.log("findRestaurants error: ", err.message ?? err);
 
         if (err.message === "Invalid Date") {
             // If invalid date then return 400 error

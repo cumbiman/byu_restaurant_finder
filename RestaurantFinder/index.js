@@ -7,7 +7,7 @@ const findRestaurants = require("./findRestaurants/findRestaurants");
 
 module.exports = async function (context, req) {
     try {
-        // Get date and time inputs
+        // Get date and time user inputs
         const inputDate = req?.query?.date ?? req?.body?.date ?? undefined;
         const inputTime = req?.query?.time ?? req?.body?.time ?? undefined;
 
@@ -17,7 +17,7 @@ module.exports = async function (context, req) {
 
         const parserResults = findRestaurants(context, inputDate, inputTime);
 
-        // Send the response from jsonParser
+        // Send the response from findRestaurants
         context.res = parserResults;
     } catch (err) {
         // Log error in function logs
