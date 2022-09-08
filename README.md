@@ -4,7 +4,7 @@ This is a coding exercise to find open restaurants from a JSON file using a date
 
 This API is intended to be run as a Node.js Azure Function. A live example can be viewed at <https://restaurant-finder.azurewebsites.net/api/RestaurantFinder?date=[DATE]&time=[TIME]>, with the [DATE] query parameter replaced with a url-safe date (i.e. - 2022-10-20) and the [TIME] query parameter replaced with a url-safe time (i.e. - 12:30%20pm).
 
-Navigating to <https://restaurant-finder.azurewebsites.net/api/RestaurantFinder?date=2022-09-01&time=7:30%20pm> will return the following JSON results:
+For example, navigating to <https://restaurant-finder.azurewebsites.net/api/RestaurantFinder?date=2022-09-01&time=7:30%20pm> will return the following `application/json` results:
 
 ```JSON
 {
@@ -63,3 +63,14 @@ Navigating to <https://restaurant-finder.azurewebsites.net/api/RestaurantFinder?
   ]
 }
 ```
+
+## To run the function app locally
+
+1. Either install the [Azure Functions VS Code Extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions) or [Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Cwindows%2Cnode%2Cportal%2Cbash#start).
+2. Run `func start` from the command line or "Execute function now..." from the function in the Azure plugins local workspace.
+3. Navigate to <http://localhost:7071/api/RestaurantFinder?date=[DATE]&time=[TIME]> to receive results from the local endpoint.
+
+## To run the unit tests
+1. Enter `npm install` in a command prompt at the root of the project. This will install the Jest testing tool.
+2. Enter `npm test` in a command prompt at the root of the project. This will initiate the tests and return the results.
+3. If you would like to review the test coverage, run `npm run test-coverage`.
